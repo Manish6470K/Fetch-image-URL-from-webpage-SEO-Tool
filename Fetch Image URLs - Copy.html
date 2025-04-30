@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image URL Extractor</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { margin-top: 10px; padding: 10px; width: 100%; max-width: 500px; }
+        ul { list-style: none; padding: 0; }
+        li { margin-top: 5px; word-wrap: break-word; }
+        .addButton{
+            width: 300px; height: 40px; background-color: rgb(4, 4, 102); border-radius: 4px; font-size: 23px; padding: 10px;color: white;
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Image URL Extractor <a href="https://cors-anywhere.herokuapp.com/" target="_blank" class="addButton">Click Me if Not Working</a></h1>
+    <p>Enter a webpage URL to extract all unique image links:</p>
+    <input type="text" id="urlInput" placeholder="Enter webpage URL">
+    <button onclick="fetchImages()">Extract Image URLs</button>
+    <ul id="imageList"></ul>
+
+    <script>
+        async function fetchImages() {
+            const url = document.getElementById("urlInput").value.trim();
+            const imageList = document.getElementById("imageList");
+            imageList.innerHTML = ""; // Clear previous results
+
+            if (!url) {
+                alert("Please enter a valid URL.");
+                return;
+            }
+
+            try {
+                // Use a public CORS proxy to fetch HTML content
+                const response = await fetch(`https://cors-anywhere.herokuapp.com/${url}`);
+                
+                if (!response.ok) {
+                    throw new Error("Failed to fetch the page. Please try a different URL.");
+                }
+
+                const htmlContent = await response.text();
+                
+                // Parse the HTML content
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, "text/html");
+
+                // Find all <img> tags and extract their src attributes
+                const images = doc.querySelectorAll("img");
+                const uniqueImages = new Set(); // Track unique image URLs
+
+                if (images.length === 0) {
+                    imageList.innerHTML = "<li>No images found on this webpage.</li>";
+                } else {
+                    images.forEach(img => {
+                        let imgSrc = img.getAttribute("src");
+
+                        // Ensure imgSrc is an absolute URL by adding the base domain
+                        if (imgSrc && !imgSrc.startsWith("http")) {
+                            const baseDomain = new URL(url).origin;
+                            imgSrc = new URL(imgSrc, baseDomain).href;
+                        }
+
+                        // Check if the image URL is already in the Set (to avoid duplicates)
+                        if (imgSrc && !uniqueImages.has(imgSrc)) {
+                            uniqueImages.add(imgSrc);
+                            const listItem = document.createElement("li");
+                            listItem.textContent = imgSrc;
+                            imageList.appendChild(listItem);
+                        }
+                    });
+                }
+                // console.log(imageList);
+                // Create a temporary HTML element to parse the string
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = imageList;
+
+                // Log the content of the temporary div to see if the HTML is correctly parsed
+                console.log(tempDiv.innerHTML);
+
+                // Select all <li> elements
+                const liElements = tempDiv.querySelectorAll('li');
+
+                // Log the list of <li> elements to verify they're being selected correctly
+                console.log(liElements);
+
+                // Extract the URLs from the <li> elements
+                const urls = Array.from(liElements).map(li => li.textContent);
+
+                // Log the final array of URLs
+                console.log(urls);
+
+            } catch (error) {
+                console.error("Error fetching or parsing images:", error);
+                alert("An error occurred while fetching the images. Please check the console for details.");
+            }
+        }
+
+    </script>
+</body>
+</html>
